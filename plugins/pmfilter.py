@@ -1528,7 +1528,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                    InlineKeyboardButton('✦ ᴛʀᴇɴᴅɪɴɢ ✦', callback_data="topsearch"),
                     InlineKeyboardButton('✦ ᴘʀᴇᴍɪᴜᴍ ✦', callback_data="premium_info"),
                 ],[
-                    InlineKeyboardButton('「 ✦ ᴏᴡɴᴇʀ ✦ 」', url='http://t.me/FilmyflixHD_Supportbot'),
+                    InlineKeyboardButton('⬙ ᴍᴏᴠɪᴇ ʀᴇQᴜᴇꜱᴛ ᴛɪᴘꜱ ⬘', url='https://telegra.ph/MOVIE-REQUEST-TIPS-08-21'),
                 ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         current_time = datetime.now(pytz.timezone(TIMEZONE))
