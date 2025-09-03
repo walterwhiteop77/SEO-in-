@@ -23,8 +23,20 @@ class Database:
                 {"user_id": user_id, "messages.text": message_text},
                 {"$inc": {"messages.$.count": 1}}
             )
+    async def get_top_messages(self, limit=30):
+        pipeline = [
+            {"$unwind": "$messages"},
+            {"$group": {"_id": "$messages.text", "count": {"$sum": "$messages.count"}}},
+            {"$sort": {"count": -1}},
+            {"$limit": limit}
+        ]
+        results = await self.col.aggregate(pipeline).to_list(limit)
+        return [result['_id'] for result in results]
+    
+    async def delete_all_messages(self):
+        await self.col.delete_many({})
 
-        def create_configuration_data(self, advertisement=None):
+def create_configuration_data(self, advertisement=None):
 
         return {
             "advertisement": advertisement,
@@ -84,18 +96,20 @@ class Database:
                 if (impression_count == 0) or (expiry and datetime.now() > expiry):
                     await self.config_col.update_one(
                         {}, {"$set": {"advertisement": None}}
-    )
-    async def get_top_messages(self, limit=30):
-        pipeline = [
-            {"$unwind": "$messages"},
-            {"$group": {"_id": "$messages.text", "count": {"$sum": "$messages.count"}}},
-            {"$sort": {"count": -1}},
-            {"$limit": limit}
-        ]
-        results = await self.col.aggregate(pipeline).to_list(limit)
-        return [result['_id'] for result in results]
-    
-    async def delete_all_messages(self):
-        await self.col.delete_many({})
+                    )
+    async def update_configuration(self, key, value):
+        try:
+            await self.config_col.update_one({}, {"$set": {key: value}}, upsert=True)
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    async def get_configuration_value(self, key):
+        configuration = await self.config_col.find_one({})
+        if not configuration:
+            await self.config_col.insert_one(self.create_configuration_data())
+            configuration = await self.config_col.find_one({})
+        return configuration.get(key, False)
+            
 
 mdb = Database(DATABASE_URI, "admin_database")
