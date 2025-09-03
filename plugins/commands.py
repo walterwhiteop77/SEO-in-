@@ -219,7 +219,30 @@ async def start(client, message):
             parse_mode=enums.ParseMode.HTML
         )
         return  
-    
+    if len(message.command) == 2 and message.command[1] in ["ads"]:
+        msg, _, impression = await mdb.get_advirtisment()
+        user = await db.get_user(message.from_user.id)
+        seen_ads = user.get("seen_ads", False)
+        JISSHU_ADS_LINK = await db.jisshu_get_ads_link()
+        buttons = [[InlineKeyboardButton("❌ ᴄʟᴏꜱᴇ ❌", callback_data="close_data")]]
+        reply_markup = InlineKeyboardMarkup(buttons)
+        if msg:
+            await message.reply_photo(
+                photo=JISSHU_ADS_LINK if JISSHU_ADS_LINK else URL,
+                caption=msg,
+                reply_markup=reply_markup,
+                parse_mode=enums.ParseMode.HTML,
+            )
+            if impression is not None and not seen_ads:
+                await mdb.update_advirtisment_impression(int(impression) - 1)
+                await db.update_value(message.from_user.id, "seen_ads", True)
+        else:
+            await message.reply("<b>No Ads Found</b>")
+        await mdb.reset_advertisement_if_expired()
+        if msg is None and seen_ads:
+            await db.update_value(message.from_user.id, "seen_ads", False)
+        return
+
     if len(message.command) == 2 and message.command[1].startswith('getfile'):
         movies = message.command[1].split("-", 1)[1] 
         movie = movies.replace('-',' ')
