@@ -24,6 +24,67 @@ class Database:
                 {"$inc": {"messages.$.count": 1}}
             )
 
+        def create_configuration_data(self, advertisement=None):
+
+        return {
+            "advertisement": advertisement,
+        }
+
+    async def update_advirtisment(
+        self, ads_string=None, ads_name=None, expiry=None, impression=None
+    ):
+        config = await self.config_col.find_one({})
+        if not config:
+            await self.config_col.insert_one(self.create_configuration_data())
+            config = await self.config_col.find_one({})
+
+        advertisement = config.get("advertisement")
+
+        if advertisement is None:
+            # If 'advertisement' field is not present, create it
+            advertisement = {}
+            config["advertisement"] = advertisement
+
+        # Update the fields within the 'advertisement' field
+        advertisement["ads_string"] = ads_string
+        advertisement["ads_name"] = ads_name
+        advertisement["expiry"] = expiry
+        advertisement["impression_count"] = impression
+
+        await self.config_col.update_one(
+            {}, {"$set": {"advertisement": advertisement}}, upsert=True
+        )
+
+    async def update_advirtisment_impression(self, impression=None):
+        await self.config_col.update_one(
+            {}, {"$set": {"advertisement.impression_count": impression}}, upsert=True
+        )
+
+    async def get_advirtisment(self):
+        configuration = await self.config_col.find_one({})
+        if not configuration:
+            await self.config_col.insert_one(self.create_configuration_data())
+            configuration = await self.config_col.find_one({})
+        advertisement = configuration.get("advertisement", False)
+        if advertisement:
+            return (
+                advertisement.get("ads_string"),
+                advertisement.get("ads_name"),
+                advertisement.get("impression_count"),
+            )
+        return None, None, None
+
+    async def reset_advertisement_if_expired(self):
+        configuration = await self.config_col.find_one({})
+        if configuration:
+            advertisement = configuration.get("advertisement", False)
+            if advertisement:
+                impression_count = advertisement.get("impression_count", 0)
+                expiry = advertisement.get("expiry", None)
+                if (impression_count == 0) or (expiry and datetime.now() > expiry):
+                    await self.config_col.update_one(
+                        {}, {"$set": {"advertisement": None}}
+    )
     async def get_top_messages(self, limit=30):
         pipeline = [
             {"$unwind": "$messages"},
